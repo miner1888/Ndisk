@@ -11,11 +11,12 @@ permissions:
 
 jobs:
   version:
-    runs-on: ubuntu-latest
+    # 固定 24.04:避免 ubuntu-latest 迁移到 Ubuntu 26 后 glibc 变化影响产物兼容性
+    runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.ver.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -64,11 +65,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-latest,  name: linux-x64 }
+          - { os: ubuntu-24.04,   name: linux-x64 }
           - { os: windows-latest, name: windows-x64 }
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: v${{ needs.version.outputs.version }}
 
@@ -102,7 +103,7 @@ jobs:
           Copy-Item README.md pkg/
           Compress-Archive -Path pkg/ndisk.exe, pkg/README.md -DestinationPath "ndisk-${{ needs.version.outputs.version }}-windows-x64.zip"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.name }}
           path: |
@@ -112,15 +113,20 @@ jobs:
 
   release:
     needs: [version, build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+        with:
+          ref: v${{ needs.version.outputs.version }}
+
+      - uses: actions/download-artifact@v5
         with:
           merge-multiple: true
 
       - name: 创建 Release 并上传产物
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           VERSION: ${{ needs.version.outputs.version }}
         run: |
           gh release create "v$VERSION" \
