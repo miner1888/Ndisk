@@ -16,7 +16,7 @@ jobs:
     outputs:
       version: ${{ steps.ver.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -69,7 +69,7 @@ jobs:
           - { os: windows-latest, name: windows-x64 }
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: v${{ needs.version.outputs.version }}
 
@@ -103,7 +103,7 @@ jobs:
           Copy-Item README.md pkg/
           Compress-Archive -Path pkg/ndisk.exe, pkg/README.md -DestinationPath "ndisk-${{ needs.version.outputs.version }}-windows-x64.zip"
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.name }}
           path: |
@@ -115,11 +115,11 @@ jobs:
     needs: [version, build]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: v${{ needs.version.outputs.version }}
 
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         with:
           merge-multiple: true
 
