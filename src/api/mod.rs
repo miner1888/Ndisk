@@ -1,5 +1,6 @@
 pub mod admin;
 pub mod auth;
+pub mod dav;
 pub mod files;
 pub mod links;
 pub mod media;

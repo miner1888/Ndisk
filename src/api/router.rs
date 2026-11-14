@@ -1,5 +1,5 @@
 use axum::extract::DefaultBodyLimit;
-use axum::routing::{delete, get, patch, post, put};
+use axum::routing::{any, delete, get, patch, post, put};
 use axum::Router;
 use tower_http::trace::TraceLayer;
 
@@ -24,6 +24,10 @@ pub fn build(st: AppState) -> Router {
             "/api/admin/transcode-replace",
             post(h::admin::set_transcode_replace),
         )
+        // WebDAV(Basic 认证):/dav 根列共享,/dav/{*path} 文件操作
+        .route("/dav", any(h::dav::dav_root))
+        .route("/dav/", any(h::dav::dav_root))
+        .route("/dav/{*path}", any(h::dav::dav_handler))
         // 用户管理
         .route("/api/users", get(h::users::list).post(h::users::create))
         .route(

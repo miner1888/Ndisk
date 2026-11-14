@@ -105,6 +105,7 @@ export function renderApp() {
     const r = who.getBoundingClientRect();
     const items = [];
     if (session.user && session.user.is_admin) items.push({ icon: ICN.gear, label: "管理后台", act: () => renderAdmin() });
+    items.push({ icon: ICN.info, label: "使用帮助", act: () => import("./dialogs.js").then((m) => m.helpModal()) });
     if (session.user) items.push({ icon: ICN.logout, label: "退出登录", act: () => logout() });
     else items.push({ icon: ICN.login, label: "登录", act: () => showLogin() });
     openMenuAt({ clientX: r.left, clientY: r.top - 6 }, items);

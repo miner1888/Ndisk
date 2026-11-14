@@ -427,11 +427,15 @@ export async function openMedia(name, mask, fullPath) {
     return;
   }
   mask = pvPrepare(mask, name);
+  // 视频播放:隐藏底部名称 / 大小 / 分享 / 下载栏(文件名仍在标题栏)
+  const isVideo = meta.kind === "video";
+  const metaBar = mask.querySelector(".meta");
+  if (isVideo && metaBar) metaBar.style.display = "none";
   const sEl = mask.querySelector("#pv-size");
   if (sEl) sEl.textContent = `${fmtSize(meta.size)} · ${meta.mime || ""}`;
-  mask.querySelector("[data-dl]").onclick = () => download(name, path);
+  const dlBtn = mask.querySelector("[data-dl]");
+  if (dlBtn) dlBtn.onclick = () => download(name, path);
   const sh = mask.querySelector("[data-share]");
-  if (sh) sh.onclick = () => import("./dialogs.js").then((m) => m.shareModal(share.id, path, name));
   if (sh) sh.onclick = () => import("./dialogs.js").then((m) => m.shareModal(share.id, path, name));
   const body = mask.querySelector("#pv-body");
   pvCancel();
@@ -440,7 +444,8 @@ export async function openMedia(name, mask, fullPath) {
     body.innerHTML = `<video controls autoplay src="${esc(src)}"></video>`;
     const v = body.querySelector("video");
     v.style.maxWidth = "100%";
-    v.style.maxHeight = "78vh";
+    // 信息栏隐藏后视频可以更高
+    v.style.maxHeight = isVideo ? "88vh" : "78vh";
     v.style.borderRadius = "10px";
   };
   if ((st.direct || st.state === "ready") && st.src) {
@@ -479,7 +484,6 @@ export async function openFile(name, mask, fullPath) {
   const sh = mask.querySelector("[data-share]");
   if (sh) sh.onclick = () => import("./dialogs.js").then((m) => m.shareModal(share.id, path, name));
   const body = mask.querySelector("#pv-body");
-  pvCancel();
   pvCancel();
   const ext = meta.ext;
   const TEXT_EXTS = ["txt", "log", "md", "markdown", "yaml", "yml", "conf", "ini", "toml", "json", "xml", "html", "htm", "css", "js", "mjs", "ts", "sh", "bash", "py", "sql", "properties", "env"];

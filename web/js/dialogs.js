@@ -494,3 +494,38 @@ function joinPath(a, b) {
   if (a === "/") return "/" + b.replace(/^\/+/, "");
   return a.replace(/\/+$/, "") + "/" + b.replace(/^\/+/, "");
 }
+
+/** 使用帮助:常用操作与 WebDAV 连接说明 */
+export function helpModal() {
+  const host = location.host;
+  const davUrl = `${location.protocol}//${host}/dav/`;
+  const mask = openModal(`
+    <div class="help">
+      <div class="help-sec">
+        <div class="help-t">常用快捷键</div>
+        <div class="help-row"><span>Ctrl+A</span>全选 / 取消全选</div>
+        <div class="help-row"><span>F2</span>重命名选中项</div>
+        <div class="help-row"><span>Delete</span>删除选中项</div>
+        <div class="help-row"><span>Esc</span>关闭预览 / 弹窗</div>
+        <div class="help-row"><span>双击 / 轻点</span>打开文件或进入文件夹</div>
+        <div class="help-row"><span>右键</span>文件操作菜单(移动 / 分享 / 详情…)</div>
+      </div>
+      <div class="help-sec">
+        <div class="help-t">WebDAV 连接</div>
+        <div class="help-row">地址:<b>${esc(davUrl)}</b><button class="btn mini ghost" id="help-copy">${ICN.copy}复制</button></div>
+        <div class="help-row">认证:你的登录用户名和密码</div>
+        <div class="help-p">连接后看到的就是你自己的个人空间,可直接建文件夹 / 上传 / 同步;管理员发布的共享目录以文件夹形式列在根下,按目录权限读写。</div>
+        <div class="help-row">Windows 映射网络驱动器:</div>
+        <div class="help-p">文件资源管理器 → 此电脑 → 映射网络驱动器 → 填入上面的地址 → 勾选"使用其他凭据连接" → 输入账号密码。公网使用请先在管理后台配置 HTTPS。</div>
+        <div class="help-row">rclone 示例:</div>
+        <div class="help-code">rclone config create ndisk webdav url ${esc(davUrl)} vendor other user 你的账号 pass 你的密码
+rclone ls ndisk:
+rclone copy 本地目录 ndisk:目标目录</div>
+        <div class="help-p">说明:单次上传 ≤ 分片大小(默认 8M)自动直传,大文件自动分片断点续传;下载支持断点续传;开启"自动转码替换"后,上传的视频会自动转为 MP4。</div>
+      </div>
+      <div class="help-actions"><button class="btn mini" data-close="1">知道了</button></div>
+    </div>`, "modal-md");
+  mask.querySelector(".mhead .mt").textContent = "使用帮助";
+  const copyBtn = mask.querySelector("#help-copy");
+  if (copyBtn) copyBtn.onclick = () => copyText(davUrl, "WebDAV 地址已复制");
+}

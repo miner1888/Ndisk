@@ -640,7 +640,11 @@ pub async fn dl_signed(
     Query(q): Query<SigQ>,
 ) -> Response {
     // 实际下载目标以路径段为准(查询参数里的 path 仅参与签名校验)
-    let rel = if q.path.is_empty() { name } else { q.path.clone() };
+    let rel = if q.path.is_empty() {
+        name
+    } else {
+        q.path.clone()
+    };
     if let Err(e) = ticket::verify(&st, "file", share_id, &rel, q.exp, &q.sig) {
         return e.into_response();
     }
