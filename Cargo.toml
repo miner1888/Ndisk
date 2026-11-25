@@ -1,6 +1,6 @@
 [package]
 name = "ndisk"
-version = "1.0.0"
+version = "0.0.1"
 edition = "2021"
 description = "NDisk 多用户网盘(二次重建):分片断点上传 · 在线预览编辑 · 目录权限 · 分享链接 · 离线下载(Linux / Windows)"
 default-run = "ndisk"
