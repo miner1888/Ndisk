@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="NDisk 云盘">
+  <title>NDisk 云盘</title>
+  <defs>
+    <linearGradient id="nd-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5b6cf6"/>
+      <stop offset="0.55" stop-color="#7c5cf8"/>
+      <stop offset="1" stop-color="#a855f7"/>
+    </linearGradient>
+    <linearGradient id="nd-hl" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".26"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="url(#nd-bg)"/>
+  <path d="M0 15A15 15 0 0 1 15 0h34a15 15 0 0 1 15 15v9H0z" fill="url(#nd-hl)"/>
+  <g fill="#ffffff">
+    <circle cx="24" cy="33" r="8.6"/>
+    <circle cx="33.5" cy="29" r="11.2"/>
+    <circle cx="43" cy="34" r="7.6"/>
+    <rect x="15.6" y="32.4" width="34.4" height="9.6" rx="4.8"/>
+  </g>
+  <rect x="23" y="47.6" width="18" height="5.2" rx="2.6" fill="#ffffff"/>
+</svg>

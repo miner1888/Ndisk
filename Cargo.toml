@@ -1,0 +1,78 @@
+[package]
+name = "ndisk"
+version = "1.0.0"
+edition = "2021"
+description = "NDisk 多用户网盘(二次重建):分片断点上传 · 在线预览编辑 · 目录权限 · 分享链接 · 离线下载(Linux / Windows)"
+default-run = "ndisk"
+
+[lib]
+name = "ndisk"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ndisk"
+path = "src/main.rs"
+
+[dependencies]
+axum = { version = "0.8", features = ["json", "macros", "multipart"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "fs", "io-util", "sync", "time", "signal", "process"] }
+tokio-util = { version = "0.7", features = ["io", "compat"] }
+hyper = { version = "1", features = ["http1", "server"] }
+hyper-util = { version = "0.1", features = ["tokio", "service"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["trace"] }
+rusqlite = { version = "0.32", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+argon2 = "0.6"
+rand = "0.10"
+base64 = "0.23"
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider", "stream"] }
+# default-features=false 剪掉 default-tls(它会拉 crypto-hash→hex 0.3/openssl/winapi),
+# sha1 改走 rust-tls 的 aws-lc-rs 实现(aws-lc-rs 本就在依赖树中,rustls 的默认 provider)。
+librqbit = { version = "9", default-features = false, features = ["disable-upload", "rust-tls", "http-api-client"] }
+bytes = "1"
+anyhow = "1"
+flate2 = "1"
+encoding_rs = "0.8"
+url = "2"
+futures-core = "0.3"
+futures-util = "0.3"
+tokio-stream = { version = "0.1", features = ["sync"] }
+sha2 = "0.11"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tokio-rustls = "0.26"
+# 显式启用 ring 后端:依赖树里 reqwest/librqbit 会同时引入 ring 与 aws-lc-rs,
+# rustls 无法自动选定 provider,必须在启动时显式安装(见 tls.rs::init_crypto)。
+rustls = { version = "0.23", features = ["ring"] }
+rustls-pemfile = "2"
+rust-embed = { version = "8", features = ["debug-embed"] }
+percent-encoding = "2"
+# no_thp:Linux 上禁用 mimalloc 的透明大页。mimalloc v3 默认对堆内存
+# madvise(MADV_HUGEPAGE),小对象页落入 2MB 大页后释放不归还 OS,
+# 大文件下载/多线程分配会把常驻内存抬到数百 MB 且不回落。
+mimalloc = { version = "0.1", features = ["no_thp"] }
+fs2 = "0.4"
+
+# 仅 Windows 构建时用于把 assets/ndisk.ico 写入 exe 资源(见 build.rs)
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1"
+
+# BT 引擎使用 zerx-lab/rqbit fork(含 uTP / MSE / DHT 增强),这是唯一的 git 依赖。
+# 本版本不携带 vendor/ 本地 fork:第三方依赖直接取自 crates.io 与上面这个 git rev,
+# 因此会存在少量同名多版本共存(它们是各 crate 自己声明的硬约束,无法在不 fork 的前提下消除)。
+# 已验证:构建 / 测试 / 端到端全绿;多版本清单见 README「依赖说明」。
+[patch.crates-io]
+librqbit = { git = "https://github.com/zerx-lab/rqbit", rev = "abcae61832c22e089a8ad5037843215f6422ae72" }
+librqbit-utp = { git = "https://github.com/zerx-lab/librqbit-utp", rev = "f6d50980a637957e0084c6f1a21f86d531c01b76" }
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+# 体积优先档:仅影响 Rust 侧代码生成(实测 22.0 MB → 15.0 MB);
+# 磁盘/网络 I/O、SQLite、aws-lc-rs/ring 的 C 与汇编实现不受影响。
+opt-level = "z"
+# panic 保持默认 unwind:单个请求/任务 panic 只断当前连接,由运行时隔离,
+# 不至于让整个服务进程退出(abort 只省一点体积,可用性代价太大)。

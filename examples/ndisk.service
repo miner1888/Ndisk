@@ -1,0 +1,34 @@
+# systemd 服务示例(按需调整路径 / 用户 / 端口)
+#
+# 安装:
+#   sudo cp examples/ndisk.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now ndisk
+#
+# 若要从公网访问,请先在管理后台(HTTPS 证书)配置证书,再放开 443。
+
+[Unit]
+Description=NDisk 多用户网盘(二次重建版)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# 建议使用独立账号运行,并让它拥有数据目录
+User=ndisk
+Group=ndisk
+WorkingDirectory=/opt/ndisk
+# NDISK_FFMPEG 可选;不设置则在 PATH 中查找 ffmpeg
+# Environment=NDISK_FFMPEG=/usr/bin/ffmpeg
+# Environment=RUST_LOG=ndisk=info,tower_http=warn
+ExecStart=/opt/ndisk/ndisk \
+    --listen 0.0.0.0:9000 \
+    --tls-listen 0.0.0.0:443 \
+    --data /var/lib/ndisk
+Restart=on-failure
+RestartSec=3
+# 上传 / 转码 / 离线下载可能有较多文件句柄
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

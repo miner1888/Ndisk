@@ -1,0 +1,136 @@
+name: Release
+
+# 推送到 main 自动:版本号从 0.0.1 起递增 patch → 写入 Cargo.toml → 打 tag → 双平台编译 → GitHub Release
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    # 固定 24.04:避免 ubuntu-latest 迁移到 Ubuntu 26 后 glibc 变化影响产物兼容性
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: 计算下一版本号(无 tag 从 0.0.1 起,之后 patch +1)
+        id: ver
+        run: |
+          LAST=$(git tag -l 'v*' --sort=-v:refname | head -n1)
+          if [ -z "$LAST" ]; then
+            NEXT="0.0.1"
+          else
+            V="${LAST#v}"
+            MAJOR=$(echo "$V" | cut -d. -f1)
+            MINOR=$(echo "$V" | cut -d. -f2)
+            PATCH=$(echo "$V" | cut -d. -f3)
+            NEXT="$MAJOR.$MINOR.$((PATCH + 1))"
+          fi
+          echo "上一个: ${LAST:-无} → 本次: v$NEXT"
+          echo "version=$NEXT" >> "$GITHUB_OUTPUT"
+
+      - name: 写入 Cargo.toml / Cargo.lock
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          sed -i "0,/^version = \".*\"$/s//version = \"$VERSION\"/" Cargo.toml
+          cargo update -p ndisk --offline || cargo update -p ndisk
+
+      - name: 提交版本号并打 tag
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Cargo.toml Cargo.lock
+          if git diff --cached --quiet; then
+            echo "版本号无变化,跳过提交"
+          else
+            git commit -m "chore(release): v$VERSION"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+          git tag -f "v$VERSION"
+          git push origin "v$VERSION" --force
+
+  build:
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-24.04,   name: linux-x64 }
+          - { os: windows-latest, name: windows-x64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: v${{ needs.version.outputs.version }}
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: 测试
+        run: cargo test --release
+
+      - name: 编译(Linux)
+        if: matrix.name == 'linux-x64'
+        run: cargo build --release
+
+      - name: 编译(Windows,自动嵌入图标与版本信息)
+        if: matrix.name == 'windows-x64'
+        run: cargo build --release
+
+      - name: 打包 Linux 产物
+        if: matrix.name == 'linux-x64'
+        run: |
+          mkdir -p pkg
+          cp target/release/ndisk pkg/
+          cp README.md pkg/
+          tar -czf "ndisk-${{ needs.version.outputs.version }}-linux-x64.tar.gz" -C pkg ndisk README.md
+
+      - name: 打包 Windows 产物
+        if: matrix.name == 'windows-x64'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path pkg | Out-Null
+          Copy-Item target/release/ndisk.exe pkg/
+          Copy-Item README.md pkg/
+          Compress-Archive -Path pkg/ndisk.exe, pkg/README.md -DestinationPath "ndisk-${{ needs.version.outputs.version }}-windows-x64.zip"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.name }}
+          path: |
+            ndisk-*-linux-x64.tar.gz
+            ndisk-*-windows-x64.zip
+          if-no-files-found: error
+
+  release:
+    needs: [version, build]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: v${{ needs.version.outputs.version }}
+
+      - uses: actions/download-artifact@v8
+        with:
+          merge-multiple: true
+
+      - name: 创建 Release 并上传产物
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          gh release create "v$VERSION" \
+            --title "v$VERSION" \
+            --generate-notes \
+            --target "${{ github.sha }}" \
+            ndisk-*

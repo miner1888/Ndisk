@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="NDisk 多用户网盘:断点续传 · 在线播放 · 安全分享">
+<title>云盘 · 多用户网盘</title>
+<link rel="stylesheet" href="/static/css/app.css">
+<link rel="icon" type="image/svg+xml" href="/static/logo.svg">
+<link rel="alternate icon" type="image/png" href="/static/favicon.png">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+<meta name="theme-color" content="#6b5cf7">
+<script>
+// 主题在样式应用前同步设置,避免闪烁
+(function () {
+  try {
+    var pref = localStorage.getItem("nd_theme") || "auto";
+    var dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    document.documentElement.setAttribute("data-theme", pref === "auto" ? (dark ? "dark" : "light") : pref);
+  } catch (e) { document.documentElement.setAttribute("data-theme", "light"); }
+})();
+</script>
+</head>
+<body>
+<div id="app"></div>
+<script src="/static/vendor/xlsx.full.min.js"></script>
+<script src="/static/vendor/jszip.min.js"></script>
+<script src="/static/vendor/docx-preview.min.js"></script>
+<script type="module" src="/static/js/main.js"></script>
+</body>
+</html>
